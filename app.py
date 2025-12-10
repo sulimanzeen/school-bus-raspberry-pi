@@ -38,6 +38,7 @@ timestamp = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 #MY Whatsapp API LINK
+#I have my own private api set-up on another private server That handles whatsapp messages.
 WHATSAPP_API_URL = "http://138.201.246.236:3000/api/sendText"
 
 #Important function for gps
