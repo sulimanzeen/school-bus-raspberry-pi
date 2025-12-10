@@ -10,7 +10,11 @@ import os
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
+#Self BUS ID
+GLOBALSELFBUSID = 3
 
+
+#MYSQL Credientials
 load_dotenv()
 
 
@@ -18,7 +22,6 @@ load_dotenv()
 GPIO.setmode(GPIO.BCM)
 display = drivers.Lcd()
 
-GLOBALSELFBUSID = 3
 # Connect to MySQL
 display.lcd_display_string("Starting...", 1)
 time.sleep(1)
@@ -27,7 +30,7 @@ time.sleep(1)
 
 
 
-# CHECK IN ID = 0 // CHECK OUT ID = 1
+
 
 
 #Timestamp Logic
@@ -41,10 +44,8 @@ timestamp = current_time.strftime("%Y-%m-%d %H:%M:%S")
 #I have my own private api set-up on another private server That handles whatsapp messages.
 WHATSAPP_API_URL = "http://138.201.246.236:3000/api/sendText"
 
+
 #Important function for gps
-
-
-
 def get_gps_coordinates_First():
     """
     Reads data from NEO-6M GPS and returns latitude, longitude, altitude,
@@ -262,6 +263,7 @@ while True:
                 StudentSet.remove(RFIDid)
                 display.lcd_display_string("Checked Out:", 1)
                 display.lcd_display_string(f'ID: {student_name}', 2)
+                # CHECK IN ID = 0 // CHECK OUT ID = 1
                 queryCheckingIN = """
                 INSERT INTO attendance (student_id, bus_id, type, timestamp)
                 VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
@@ -280,6 +282,7 @@ while True:
                 display.lcd_clear()
                 display.lcd_display_string("Checked In:", 1)
                 display.lcd_display_string(f'ID: {student_name}', 2)
+                # CHECK IN ID = 0 // CHECK OUT ID = 1
                 queryCheckingIN = """
                 INSERT INTO attendance (student_id, bus_id, type, timestamp)
                 VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
@@ -389,6 +392,7 @@ while True:
                 display.lcd_clear()
                 display.lcd_display_string("Checked In:", 1)
                 display.lcd_display_string(f'ID: {student_name}', 2)
+                # CHECK IN ID = 0 // CHECK OUT ID = 1
                 queryCheckingIN = """
                 INSERT INTO attendance (student_id, bus_id, type, timestamp)
                 VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
