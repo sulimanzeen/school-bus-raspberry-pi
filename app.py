@@ -96,10 +96,12 @@ def get_gps_coordinates_First():
         return None
 
 
-
+#Try to get gps coordinates. 
 Location_cache = get_gps_coordinates_First()
 print(get_gps_coordinates_First())
 
+
+#Try to connect to cloud MYSQL
 try:
 
     db = mysql.connector.connect(
@@ -134,6 +136,8 @@ display.lcd_display_string("Awaiting Driver", 1)
 display.lcd_display_string("To Start Trip!", 2)
 time.sleep(2)
 
+#Before running actual app. driver need to start the trip!
+#Waiting for driver to start the trip!
 while True:
      try:
             
@@ -163,8 +167,8 @@ while True:
 
 
 
-#Before running actual app. driver need to start the trip!
 
+#Start the app!
 
 while True:
     try:
@@ -472,11 +476,11 @@ while True:
               
                        
 
-                #GRAB GPS DATA HERE
+               
 
                 #OPEN DOOR FOR 5 SECONDS AND THEN CLOSE!
 
-                #API TO SEND MESSAGE!
+              
 
 
             #GPIO.cleanup()
