@@ -1,1 +1,1 @@
-pip install python-dotenv
+sudo pip install python-dotenv
