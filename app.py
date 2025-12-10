@@ -170,6 +170,25 @@ while True:
         #Buzzer Pin
         display.lcd_clear()
 
+        
+        if(Current_Bus_Trip_Status == 1):
+              display.lcd_display_string("Trip Ended", 1)
+              display.lcd_display_string("New Session...", 2)
+              #TWO BEEPS
+              GPIO.output(21, GPIO.HIGH)
+              time.sleep(1)
+              GPIO.output(21, GPIO.LOW)
+              time.sleep(1)
+              GPIO.output(21, GPIO.HIGH)
+              time.sleep(1)
+              GPIO.output(21, GPIO.LOW)
+              
+              #Starting the loop again as new session :)
+              continue
+
+
+
+
         display.lcd_display_string("Pass Your Key", 1)  # Write line of text to first line of display
         display.lcd_display_string("Card", 2)
         print("Hold tag near the reader...")
@@ -206,20 +225,7 @@ while True:
         row3 = cursor2.fetchone()
         Current_Bus_Trip_Status = row3[4] #Trip status
 
-        if(Current_Bus_Trip_Status == 1):
-              display.lcd_display_string("Trip Ended", 1)
-              display.lcd_display_string("New Session...", 2)
-              #TWO BEEPS
-              GPIO.output(21, GPIO.HIGH)
-              time.sleep(1)
-              GPIO.output(21, GPIO.LOW)
-              time.sleep(1)
-              GPIO.output(21, GPIO.HIGH)
-              time.sleep(1)
-              GPIO.output(21, GPIO.LOW)
-              
-              #Starting the loop again as new session :)
-              continue
+        
         
         if row:
             # [student_id, parent_id, student_name, student_rfid]
