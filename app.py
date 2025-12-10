@@ -62,10 +62,10 @@ async def get_gps_coordinates_First():
         }
         or None if GPS data not ready
     """
-    port = serial.Serial("/dev/serial0", baudrate=9600, timeout=10)
+    port = serial.Serial("/dev/serial0", baudrate=9600, timeout=2)
     try:
         display.lcd_display_string("Loading GPS...", 2)
-        timeout = 5  # seconds
+        timeout = 1  # seconds
         start_time = time.time()
         while True:
              
@@ -113,6 +113,31 @@ async def RFIDRead():
         return (RFIDid, text)
 
 
+#Door COnfiguration
+SERVO_PIN = 16   # <-- GPIO16 = physical pin 36
+GPIO.setup(SERVO_PIN, GPIO.OUT)
+
+pwm = GPIO.PWM(SERVO_PIN, 50)  # 50Hz PWM for servo
+pwm.start(0)
+
+async def set_angle(angle):
+    duty = angle / 18 + 2.5
+    pwm.ChangeDutyCycle(duty)
+    await asyncio.sleep(0.5)
+
+
+async def open_door():
+     print("Opening door to 115°...")
+     await set_angle(115)
+     
+     
+
+
+async def close_door():
+     print("Closing door to 0°...")
+     await set_angle(0)
+     
+
 #Event Handler for Trip Checking while RFID_READER IS ACTIVE (BLOCKING FUNCTION)
 async def check_trip_status():
     while True:
@@ -154,7 +179,7 @@ async def check_trip_status():
                 display.lcd_clear()
                 display.lcd_display_string("Error: MYSQL", 1)
                 display.lcd_display_string("Can't Connect", 2)
-                time.sleep(5)
+                await asyncio.sleep(5)
                 display.lcd_clear()
                 os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -164,7 +189,8 @@ async def check_trip_status():
 
 async def main():
     #Try to connect to cloud MYSQL
-
+    await close_door()
+    
     Location_cache = await get_gps_coordinates_First()
     print(Location_cache)
     try:
@@ -183,14 +209,14 @@ async def main():
         display.lcd_clear()
         display.lcd_display_string("Error: MYSQL", 1)
         display.lcd_display_string("Can't Connect", 2)
-        time.sleep(5)
+        await asyncio.sleep(5)
         display.lcd_clear()
         exit(1)
 
     #Connected To MYSQL!
     display.lcd_display_string("Cloud Server", 1)
     display.lcd_display_string("Connected!", 2)
-    time.sleep(5)
+    await asyncio.sleep(5)
     display.lcd_clear()
 
 
@@ -204,7 +230,7 @@ async def main():
     GPIO.output(21, GPIO.LOW)
     display.lcd_display_string("Awaiting Driver", 1)
     display.lcd_display_string("To Start Trip!", 2)
-    time.sleep(2)
+    await asyncio.sleep(2)
     #Before running actual app. driver need to start the trip!
     #Waiting for driver to start the trip!
     while True:
@@ -225,12 +251,12 @@ async def main():
                     
                     #BEEP Script
                     GPIO.output(21, GPIO.HIGH)
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.LOW)
                     #Breaking this while loop. to start another while loop!
                     break
                 else:
-                    time.sleep(2)
+                    await asyncio.sleep(2)
                     continue    
         except Exception as e:
                             
@@ -261,11 +287,11 @@ async def main():
                 display.lcd_display_string("New Session...", 2)
                 #TWO BEEPS
                 GPIO.output(21, GPIO.HIGH)
-                time.sleep(1)
+                await asyncio.sleep(1)
                 GPIO.output(21, GPIO.LOW)
-                time.sleep(1)
+                await asyncio.sleep(1)
                 GPIO.output(21, GPIO.HIGH)
-                time.sleep(1)
+                await asyncio.sleep(1)
                 GPIO.output(21, GPIO.LOW)
                 
                 #Starting the loop again as new session :/
@@ -286,7 +312,7 @@ async def main():
 
             # Turn on buzzer
             GPIO.output(21, GPIO.HIGH)
-            time.sleep(0.5)
+            await asyncio.sleep(0.5)
             display.lcd_clear()
             GPIO.output(21, GPIO.LOW)
             print(f"ID: {RFIDid}\nText: {text}")
@@ -344,11 +370,11 @@ async def main():
                     display.lcd_display_string("Access Denied:", 1)
                     display.lcd_display_string("Wrong Bus!", 2)
                     GPIO.output(21, GPIO.HIGH)
-                    time.sleep(0.5)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.LOW)
-                    time.sleep(0.5)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.HIGH)
-                    time.sleep(0.5)
+                    await asyncio.sleep(1)
                     display.lcd_clear()
                     GPIO.output(21, GPIO.LOW)
                     continue
@@ -361,11 +387,11 @@ async def main():
                     display.lcd_display_string("New Session...", 2)
                     #TWO BEEPS
                     GPIO.output(21, GPIO.HIGH)
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.LOW)
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.HIGH)
-                    time.sleep(1)
+                    await asyncio.sleep(1)
                     GPIO.output(21, GPIO.LOW)
                 
                     #Starting the loop again as new session :/
@@ -394,7 +420,8 @@ async def main():
                         coords = Location_cache
                         
                     display.lcd_clear()
-                    display.lcd_display_string("Checked In:", 1)
+                    await open_door()
+                    display.lcd_display_string("Checked Out:", 1)
                     display.lcd_display_string(f'ID: {student_name}', 2)
                     # CHECK IN ID = 0 // CHECK OUT ID = 1
                     queryCheckingIN = """
@@ -441,6 +468,9 @@ async def main():
 
                             print("Google Maps URL:", google_link)
                             #logic to send sms with link
+                            await asyncio.sleep(4)
+                            await close_door()
+                            await asyncio.sleep(1)
                     else:
                         #logic send message gps not available    
                         print("GPS data not available.")
@@ -474,7 +504,9 @@ async def main():
                         except Exception as e:
                             print(f"Error: {e}")
                     #OPEN DOOR FOR 5 SECONDS AND THEN CLOSE!
-
+                        await asyncio.sleep(4)
+                        await close_door()
+                        await asyncio.sleep(1)
                     
                     
                 else:
@@ -484,11 +516,11 @@ async def main():
                         display.lcd_display_string("Access Denied:", 1)
                         display.lcd_display_string("Bus Overcrowded!", 2)
                         GPIO.output(21, GPIO.HIGH)
-                        time.sleep(0.5)
+                        await asyncio.sleep(1)
                         GPIO.output(21, GPIO.LOW)
-                        time.sleep(0.5)
+                        await asyncio.sleep(1)
                         GPIO.output(21, GPIO.HIGH)
-                        time.sleep(0.5)
+                        await asyncio.sleep(1)
                         display.lcd_clear()
                         GPIO.output(21, GPIO.LOW)
                         continue
@@ -504,6 +536,7 @@ async def main():
                         coords = Location_cache
                         
                     display.lcd_clear()
+                    await open_door()
                     display.lcd_display_string("Checked In:", 1)
                     display.lcd_display_string(f'ID: {student_name}', 2)
                     # CHECK IN ID = 0 // CHECK OUT ID = 1
@@ -551,6 +584,9 @@ async def main():
 
                             print("Google Maps URL:", google_link)
                             #logic to send sms with link
+                            await asyncio.sleep(4)
+                            await close_door()
+                            await asyncio.sleep(1)
                     else:
                         #logic send message gps not available    
                         print("GPS data not available.")
@@ -583,7 +619,11 @@ async def main():
                                     # print(f"Response: {response.text}")
                         except Exception as e:
                             print(f"Error: {e}")
-                
+
+                        await asyncio.sleep(4)
+                        await close_door()
+                        await asyncio.sleep(1)
+                    
                         
 
                 
@@ -595,18 +635,18 @@ async def main():
 
                 #GPIO.cleanup()
                 print("SLeeping for 2 seconds before next read...")
-                time.sleep(5)
+                await asyncio.sleep(1)
                 display.lcd_clear()
             else:
                 print("Student Not Found")
                 display.lcd_display_string("Unknown Key!", 1)
                 display.lcd_display_string("Access Denied!", 2)
                 GPIO.output(21, GPIO.HIGH)
-                time.sleep(2)
+                await asyncio.sleep(1)
                 GPIO.output(21, GPIO.LOW)
                 #GPIO.cleanup()
                 print("SLeeping for 2 seconds before next read...")
-                time.sleep(5)
+                await asyncio.sleep(1)
                 display.lcd_clear()
 
 asyncio.run(main())
