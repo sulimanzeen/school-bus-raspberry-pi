@@ -449,7 +449,11 @@ async def main():
                                 f"at location {google_link} "
                                 f"on {timestamp}."
                             )
-
+                            
+                            # Headers
+                            headers = {
+                                "X-Api-Key": os.getenv("Whatsapp-API-KEY")
+                            }
                             # JSON payload
                             payload = {
                                 "chatId": f"{parent_phone}@c.us",
@@ -458,7 +462,7 @@ async def main():
                             }
                                 # Send POST request
                             try:
-                                response = requests.post(WHATSAPP_API_URL, json=payload)
+                                response = requests.post(WHATSAPP_API_URL, json=payload, headers=headers)
                                 # Print response status and content
                                 print(f"POST REQUEST SENT | Status code: {response.status_code}")
                                 # print(f"Response: {response.text}")
@@ -488,8 +492,13 @@ async def main():
                                 f"at location NOT AVAIABLE! "
                                 f"on {timestamp}."
                         )
+                        
 
-                                # JSON payload
+                       # Headers
+                        headers = {
+                                "X-Api-Key": os.getenv("Whatsapp-API-KEY")
+                            }
+                            # JSON payload
                         payload = {
                                 "chatId": f"{parent_phone}@c.us",
                                 "text": f"{message_text}!",
@@ -497,12 +506,13 @@ async def main():
                         }
                                 # Send POST request
                         try:
-                                    response = requests.post(WHATSAPP_API_URL, json=payload)
-                                    # Print response status and content
-                                    print(f"POST REQUEST SENT | Status code: {response.status_code}")
-                                    # print(f"Response: {response.text}")
+                                response = requests.post(WHATSAPP_API_URL, json=payload, headers=headers)
+                                # Print response status and content
+                                print(f"POST REQUEST SENT | Status code: {response.status_code}")
+                                # print(f"Response: {response.text}")
                         except Exception as e:
-                            print(f"Error: {e}")
+                                
+                                print(f"Error: {e}")
                     #OPEN DOOR FOR 5 SECONDS AND THEN CLOSE!
                         await asyncio.sleep(4)
                         await close_door()
@@ -566,6 +576,10 @@ async def main():
                                 f"on {timestamp}."
                             )
 
+                            # Headers
+                            headers = {
+                                "X-Api-Key": os.getenv("Whatsapp-API-KEY")
+                            }
                             # JSON payload
                             payload = {
                                 "chatId": f"{parent_phone}@c.us",
@@ -574,7 +588,7 @@ async def main():
                             }
                                 # Send POST request
                             try:
-                                response = requests.post(WHATSAPP_API_URL, json=payload)
+                                response = requests.post(WHATSAPP_API_URL, json=payload, headers=headers)
                                 # Print response status and content
                                 print(f"POST REQUEST SENT | Status code: {response.status_code}")
                                 # print(f"Response: {response.text}")
@@ -605,7 +619,11 @@ async def main():
                                 f"on {timestamp}."
                         )
 
-                                # JSON payload
+                        # Headers
+                        headers = {
+                                "X-Api-Key": os.getenv("Whatsapp-API-KEY")
+                            }
+                            # JSON payload
                         payload = {
                                 "chatId": f"{parent_phone}@c.us",
                                 "text": f"{message_text}!",
@@ -613,12 +631,12 @@ async def main():
                         }
                                 # Send POST request
                         try:
-                                    response = requests.post(WHATSAPP_API_URL, json=payload)
-                                    # Print response status and content
-                                    print(f"POST REQUEST SENT | Status code: {response.status_code}")
-                                    # print(f"Response: {response.text}")
+                                response = requests.post(WHATSAPP_API_URL, json=payload, headers=headers)
+                                # Print response status and content
+                                print(f"POST REQUEST SENT | Status code: {response.status_code}")
+                                # print(f"Response: {response.text}")
                         except Exception as e:
-                            print(f"Error: {e}")
+                                print(f"Error: {e}")
 
                         await asyncio.sleep(4)
                         await close_door()
