@@ -187,8 +187,10 @@ async def check_trip_status():
                 
                 
 
-
+is_task_created = False
 async def main():
+    global is_task_created
+
     #Try to connect to cloud MYSQL
     await close_door()
     
@@ -269,7 +271,8 @@ async def main():
 
 
     #Start the app!
-    reader = SimpleMFRC522()
+    
+    
     while True:
         try:
             
@@ -308,7 +311,10 @@ async def main():
             print("Hold tag near the reader...")
 
             #Event Handler CHECK TRIP STATUS!
-            db_task = asyncio.create_task(check_trip_status())  #Perfect handler for detecting stop trip while reading!
+            
+            if(is_task_created == False):
+                 db_task = asyncio.create_task(check_trip_status())  #Perfect handler for detecting stop trip while reading!
+                 is_task_created = True   
             RFIDid, text = await RFIDRead()
 
             # Turn on buzzer
