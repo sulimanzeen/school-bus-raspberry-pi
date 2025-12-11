@@ -1,3 +1,4 @@
+import asyncio
 import mysql.connector
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
@@ -10,7 +11,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
-
+import json
 #Self BUS ID
 GLOBALSELFBUSID = 3
 
@@ -104,7 +105,7 @@ async def get_gps_coordinates_First():
 #print(get_gps_coordinates_First())
 
 
-import asyncio
+
 
 async def RFIDRead():
         reader = SimpleMFRC522()
@@ -222,8 +223,8 @@ async def main():
 
 
     
-
-    StudentSet = set()
+    #For local student set handling. uncomment for testing only!
+    #StudentSet = set()
 
 
     GPIO.setup(21, GPIO.OUT)
@@ -358,7 +359,9 @@ async def main():
                 bus_model = row2[2]
                 bus_capacity = row2[3]
                 bus_trip_status = row2[4]
-
+                bus_student_list_JSON = row2[5]
+                bus_student_list_JSON_LOAD = json.loads(bus_student_list_JSON)    # becomes a Python list
+                StudentSet = set(bus_student_list_JSON_LOAD)
 
 
 
@@ -432,6 +435,17 @@ async def main():
                     
                     cursor.execute(queryCheckingIN, values)
                     db.commit()
+
+                    #Sync student list to cloud
+                    Student_Set_JSONString = json.dumps(list(StudentSet))
+                    query_update_student_list = """
+                                        UPDATE `bus`
+                                        SET `student_list` = %s
+                                        WHERE `bus`.`bus_id` = %s
+                                                 """
+                    cursor.execute(query_update_student_list, (Student_Set_JSONString, GLOBALSELFBUSID))
+                    db.commit()
+
                     if coords:
                             
                             google_link = coords['google_maps']
@@ -557,6 +571,16 @@ async def main():
                     values = (student_id, student_bus_id, 0)
                     
                     cursor.execute(queryCheckingIN, values)
+                    db.commit()
+
+                    #Sync student list to cloud
+                    Student_Set_JSONString = json.dumps(list(StudentSet))
+                    query_update_student_list = """
+                                        UPDATE `bus`
+                                        SET `student_list` = %s
+                                        WHERE `bus`.`bus_id` = %s
+                                                 """
+                    cursor.execute(query_update_student_list, (Student_Set_JSONString, GLOBALSELFBUSID))
                     db.commit()
                     if coords:
                             
