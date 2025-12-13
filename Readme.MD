@@ -1,6 +1,10 @@
 # School Bus Raspberry Pi Controller
 
-This project runs on a Raspberry Pi to manage student boarding and alighting using an MFRC522 RFID reader, a NEO-6M GPS, an I2C LCD, and a servo-controlled door. When a student scans their RFID tag the app records attendance to a MySQL server and notifies parents via a WhatsApp API with a Google Maps link to the bus location.
+This project runs on a Raspberry Pi and manages student boarding and alighting using an MFRC522 RFID reader, a NEO-6M GPS, an I2C LCD, and a servo-controlled door. When a student scans their RFID tag, the app records attendance in a MySQL database and notifies parents via a WhatsApp API that includes a Google Maps link to the bus location.
+
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). See the [LICENSE](LICENSE) file for full terms. Commercial use requires prior written permission from the copyright holder.
+
+![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)
 
 **Key features**
 - Async event loop (uses `asyncio`) with non-blocking RFID/GPS handling
