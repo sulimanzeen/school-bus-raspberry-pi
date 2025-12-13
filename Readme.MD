@@ -1,93 +1,99 @@
 # School Bus Raspberry Pi Controller
 
-This project runs on a Raspberry Pi to manage student boarding and alighting using an RFID reader, GPS, an LCD, and a servo-controlled door. When a student scans their RFID tag the app records attendance to a MySQL server and notifies parents over a WhatsApp API with a Google Maps link to the bus location.
+This project runs on a Raspberry Pi to manage student boarding and alighting using an MFRC522 RFID reader, a NEO-6M GPS, an I2C LCD, and a servo-controlled door. When a student scans their RFID tag the app records attendance to a MySQL server and notifies parents via a WhatsApp API with a Google Maps link to the bus location.
 
 **Key features**
-- Reads RFID tags (MFRC522)
-- Records check-in/check-out to a remote MySQL database
-- Sends WhatsApp notifications to parents (via an external API)
-- Reads GPS (NEO-6M) and generates Google Maps links
-- Controls a servo as a door actuator and a buzzer for feedback
-- Displays status messages on an attached LCD
+- Async event loop (uses `asyncio`) with non-blocking RFID/GPS handling
+- Reads RFID tags (MFRC522 via `mfrc522.SimpleMFRC522`)
+- Records check-in/check-out to a remote MySQL database (`mysql-connector-python`)
+- Sends WhatsApp notifications to parents (via a configurable HTTP API)
+- Reads GPS (NEO-6M over `/dev/serial0`) and builds Google Maps links
+- Controls a servo door (PWM on GPIO16) and a buzzer (GPIO21)
+- Displays status messages on an attached I2C LCD via `drivers.Lcd`
 
 ## Contents
-- `app.py` — main application
-- `drivers/` — local LCD driver and helpers
-- `example.env` — environment variable template
+- [app.py](app.py) — main application
+- [drivers/](drivers/) — local LCD driver and helpers
+- [example.env](example.env) — environment variable template
 
 ## Hardware
-- Raspberry Pi (with GPIO and serial enabled)
-- MFRC522 RFID reader (SPI)
-- NEO-6M GPS (UART `/dev/serial0`)
+- Raspberry Pi (with GPIO, SPI, I2C and serial enabled)
+- MFRC522 RFID reader (SPI) — used via `mfrc522.SimpleMFRC522`
+- NEO-6M GPS (UART `/dev/serial0`) — app parses GPGGA sentences
 - I2C LCD (used via `drivers.Lcd`)
-- Servo motor connected to GPIO16 (physical pin 36)
-- Buzzer connected to GPIO21
+- Servo motor connected to GPIO16 (BCM numbering, physical pin 36)
+- Buzzer connected to GPIO21 (BCM)
 
-Wiring is specific to your hardware modules; ensure SPI, I2C and serial are enabled in `raspi-config`.
+Ensure SPI, I2C and serial are enabled (use `raspi-config` or equivalent).
 
 ## Software / Python dependencies
 Install dependencies on the Raspberry Pi (run as a user with internet access):
 
-```powershell
-sudo apt update; sudo apt install -y python3-pip python3-serial
+```bash
+sudo apt update
+sudo apt install -y python3-pip python3-serial
 sudo pip3 install mysql-connector-python RPi.GPIO mfrc522 pynmea2 requests python-dotenv
 ```
 
 Notes:
-- `RPi.GPIO` must be used on a Raspberry Pi. On other platforms it will not work.
-- Some packages (like `mfrc522`) may require specific library versions; test them on your Pi.
+- `RPi.GPIO` and direct serial access only work on a Raspberry Pi.
+- The `mfrc522` package exposes `SimpleMFRC522` used by the app.
 
 ## Environment variables
-Create a `.env` file in the project root (you can copy `example.env`). The app reads DB credentials from environment variables:
+Create a `.env` file in the project root (you can copy `example.env`). The app reads DB credentials and the WhatsApp API key from environment variables:
 
 ```env
 DB_HOST=your_db_host
 DB_USER=your_db_user
 DB_PASS=your_db_password
 DB_NAME=your_db_name
-# Optionally change GLOBALSELFBUSID in `app.py` to match this bus's ID
+Whatsapp-API-KEY=your_api_key_here
 ```
 
+The app also uses a hard-coded `WHATSAPP_API_URL` value in `app.py`; change it there if you run your own API instance.
+
 ## Configuration notes (in `app.py`)
-- `GLOBALSELFBUSID`: integer ID identifying this bus (adjust to the bus in your DB)
-- `WHATSAPP_API_URL`: currently hard-coded to the project owner’s API. Replace or proxy it if needed.
-- `SERVO_PIN` is set to `16` and the buzzer uses GPIO `21` — change pins in `app.py` if your wiring differs.
+- `GLOBALSELFBUSID` (default `3`): integer ID identifying this bus — set it to match the `bus_id` in the database for this Pi.
+- `WHATSAPP_API_URL`: endpoint used to POST WhatsApp message payloads.
+- `SERVO_PIN` is set to `16` (BCM) and the buzzer uses GPIO `21` — change pins in `app.py` if your wiring differs.
+- Serial port: the GPS is read from `/dev/serial0` at 9600 baud.
+
+## Runtime behaviour
+- On start the app attempts an initial GPS fix and connects to the MySQL server.
+- The app waits for a driver to set the `bus.trip_status` flag in the DB; once the trip is active it will:
+	- Prompt for RFID tags and read them using `SimpleMFRC522`.
+	- Validate the student record and whether they belong to this bus.
+	- Insert records into `attendance` for check-in/check-out (the code uses `type` values where `0`/`1` correspond to check-in/check-out in the app comments).
+	- Maintain an in-memory student list synced back to the `bus.student_list` JSON field.
+	- Read GPS coordinates for each event and include a Google Maps URL in WhatsApp notifications sent to the parent.
+	- Control the servo to open/close the door and use the buzzer for audible feedback.
+	- A background task monitors the `bus` row for trip status changes and restarts the process when a trip ends.
+
+## Database expectations
+The app expects tables similar to the following (simplified):
+
+- `bus` — expected to include `bus_id`, `driver_name`, `model`, `capacity`, `trip_status`, `student_list` (JSON)
+- `student` — expected to include `student_id`, `parent_id`, `student_bus_id`, `student_name`, `student_rfid`
+- `parent` — expected to include `parent_id`, `name`, `phone`
+- `attendance` — expected to include `attendance_id`, `student_id`, `bus_id`, `type`, `timestamp`
+
+Adjust your schema or queries in `app.py` if your database differs.
 
 ## Running
 On the Raspberry Pi (with GPIO access and serial/I2C enabled):
 
-```powershell
+```bash
 sudo python3 app.py
 ```
 
 Running as root (via `sudo`) is typically required for GPIO access.
 
-## How it works (high level)
-- On start the app attempts to read an initial GPS fix and connects to the MySQL server.
-- The driver starts a trip from the database (flag). When the trip is active the app repeatedly:
-	- Waits for RFID reads
-	- Validates the student and bus
-	- Updates the `attendance` table with check-in/check-out entries
-	- Retrieves GPS coordinates and constructs a Google Maps link
-	- Notifies the student’s parent via the configured WhatsApp API
-	- Controls the servo to open/close the door and uses the buzzer for feedback
-
-## Database expectations
-The app expects tables similar to the following (simplified):
-
-- `bus` (columns include `bus_id`, `driver_name`, `model`, `capacity`, `trip_status`)
-- `student` (columns include `student_id`, `parent_id`, `student_bus_id`, `student_name`, `student_rfid`)
-- `parent` (columns include `parent_id`, `name`, `phone`)
-- `attendance` (columns include `attendance_id`, `student_id`, `bus_id`, `type`, `timestamp`)
-
-Adjust your schema or queries in `app.py` if your database differs.
-
 ## Troubleshooting
 - MySQL connection errors: verify `.env` values and network access to the DB.
-- GPS issues: ensure `/dev/serial0` is enabled and the GPS module has a clear view of the sky.
+- GPS issues: ensure `/dev/serial0` is enabled and the GPS module has a clear view of the sky; the app parses GPGGA sentences.
 - RFID not reading: check SPI wiring and the MFRC522 connections.
 - Permissions/GPIO errors: run with `sudo` and ensure the user has GPIO access.
-- WhatsApp messages fail: the project posts to an external API — check `WHATSAPP_API_URL` and network connectivity.
+
 
 ## Safety and testing
 - Test hardware (servo, buzzer, RFID) with small test scripts before connecting to the DB or sending notifications.
