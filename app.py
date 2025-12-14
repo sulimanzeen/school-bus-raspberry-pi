@@ -94,10 +94,21 @@ async def get_gps_coordinates_First():
             
 
     except pynmea2.ParseError:
-        return None
+       
+                  return {
+                    "latitude": 0,
+                    "longitude": 0,
+                    "altitude": 0,
+                    "google_maps": None
+                }
     except Exception as e:
         print(f"GPS Error: {e}")
-        return None
+        return {
+                    "latitude": 0,
+                    "longitude": 0,
+                    "altitude": 0,
+                    "google_maps": None
+                }
 
 
 #Try to get gps coordinates. 
@@ -450,7 +461,21 @@ async def main():
                                                     `google_map` = %s
                                                 WHERE `bus`.`bus_id` = %s
                                             """
-                    cursor.execute(query_update_student_list, (Student_Set_JSONString, coords['google_maps'], GLOBALSELFBUSID))
+                                            
+                    google_maps = None
+
+                    if isinstance(coords, dict):
+                        google_maps = coords.get('google_maps')
+
+                    cursor.execute(
+                        query_update_student_list,
+                        (
+                            Student_Set_JSONString,
+                            google_maps,
+                            GLOBALSELFBUSID
+                        )
+                    )
+
                     db.commit()
 
                     if coords:
@@ -588,7 +613,20 @@ async def main():
                                                     `google_map` = %s
                                                 WHERE `bus`.`bus_id` = %s
                                             """
-                    cursor.execute(query_update_student_list, (Student_Set_JSONString, coords['google_maps'], GLOBALSELFBUSID))
+                    google_maps = None
+
+                    if isinstance(coords, dict):
+                        google_maps = coords.get('google_maps')
+
+                    cursor.execute(
+                        query_update_student_list,
+                        (
+                            Student_Set_JSONString,
+                            google_maps,
+                            GLOBALSELFBUSID
+                        )
+                    )
+                    
                     db.commit()
                     if coords:
                             
