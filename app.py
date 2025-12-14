@@ -445,11 +445,12 @@ async def main():
                     #Sync student list to cloud
                     Student_Set_JSONString = json.dumps(list(StudentSet))
                     query_update_student_list = """
-                                        UPDATE `bus`
-                                        SET `student_list` = %s
-                                        WHERE `bus`.`bus_id` = %s
-                                                 """
-                    cursor.execute(query_update_student_list, (Student_Set_JSONString, GLOBALSELFBUSID))
+                                                UPDATE `bus`
+                                                SET `student_list` = %s,
+                                                    `google_map` = %s
+                                                WHERE `bus`.`bus_id` = %s
+                                            """
+                    cursor.execute(query_update_student_list, (Student_Set_JSONString, coords['google_maps'], GLOBALSELFBUSID))
                     db.commit()
 
                     if coords:
@@ -582,11 +583,12 @@ async def main():
                     #Sync student list to cloud
                     Student_Set_JSONString = json.dumps(list(StudentSet))
                     query_update_student_list = """
-                                        UPDATE `bus`
-                                        SET `student_list` = %s
-                                        WHERE `bus`.`bus_id` = %s
-                                                 """
-                    cursor.execute(query_update_student_list, (Student_Set_JSONString, GLOBALSELFBUSID))
+                                                UPDATE `bus`
+                                                SET `student_list` = %s,
+                                                    `google_map` = %s
+                                                WHERE `bus`.`bus_id` = %s
+                                            """
+                    cursor.execute(query_update_student_list, (Student_Set_JSONString, coords['google_maps'], GLOBALSELFBUSID))
                     db.commit()
                     if coords:
                             
